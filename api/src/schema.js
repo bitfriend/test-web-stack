@@ -14,7 +14,7 @@ const typeDefs = gql`
     id: String!
   }
   type Query {
-    findUsers: [User]
+    findUsers(search: String, page: Int, limit: Int): [User]
     showUser(id: String!): User
   }
   type Mutation {

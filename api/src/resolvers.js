@@ -13,10 +13,20 @@ const resolvers = {
   Query: {
     findUsers: async (parent, args, context, info) => {
       const { dynamo } = context.dataSources;
-      const command = new ScanCommand({
+      const input = {
         TableName: "superformula_users",
         Limit: args.limit || 10
-      });
+      };
+      if (!!args.search) {
+        input.FilterExpression = "contains(#name, :name)";
+        input.ExpressionAttributeNames = {
+          "#name": "name"
+        };
+        input.ExpressionAttributeValues = marshall({
+          ":name": args.search
+        });
+      }
+      const command = new ScanCommand(input);
       const output = await dynamo.send(command);
       return output.Items.map(item => unmarshall(item));
     },
