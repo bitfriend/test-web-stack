@@ -59,8 +59,8 @@ const resolvers = {
         dob: moment.utc(args.dob).format(),
         address: args.address,
         description: args.description,
-        createdAt: moment.utc(args.createdAt).format(),
-        updatedAt: moment.utc(args.updatedAt).format()
+        createdAt: moment.utc().format(),
+        updatedAt: moment.utc().format()
       };
       const command = new PutItemCommand({
         TableName: "superformula_users",
@@ -97,14 +97,6 @@ const resolvers = {
       if (args.description !== undefined) {
         terms.push("description = :description");
         values[":description"] = { S: args.description };
-      }
-      if (args.createdAt !== undefined) {
-        terms.push("createdAt = :createdAt");
-        values[":createdAt"] = { S: moment.utc(args.createdAt).format() };
-      }
-      if (args.updatedAt !== undefined) {
-        terms.push("updatedAt = :updatedAt");
-        values[":updatedAt"] = { S: moment.utc(args.updatedAt).format() };
       }
       const command = new UpdateItemCommand({
         TableName: "superformula_users",
