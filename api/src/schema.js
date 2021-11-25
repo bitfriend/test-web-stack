@@ -10,11 +10,15 @@ const typeDefs = gql`
     createdAt: String
     updatedAt: String
   }
+  type FindUsersResponse {
+    totalItems: Int
+    items: [User]
+  }
   type DeleteUserResponse {
     id: String!
   }
   type Query {
-    findUsers(search: String, page: Int, limit: Int): [User]
+    findUsers(search: String, page: Int, limit: Int): FindUsersResponse
     showUser(id: String!): User
   }
   type Mutation {

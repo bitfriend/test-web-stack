@@ -26,9 +26,37 @@ const resolvers = {
           ":name": args.search
         });
       }
-      const command = new ScanCommand(input);
-      const output = await dynamo.send(command);
-      return output.Items.map(item => unmarshall(item));
+      const result = {
+        totalItems: 0
+      };
+      const exclusiveStartKeys = [];
+      // calculate starting keys by page and total item count
+      while (true) {
+        const command = new ScanCommand(input);
+        const output = await dynamo.send(command);
+        result.totalItems += output.Count;
+        if (!output.LastEvaluatedKey) {
+          break;
+        }
+        input.ExclusiveStartKey = output.LastEvaluatedKey;
+        exclusiveStartKeys.push(unmarshall(input.ExclusiveStartKey).id);
+      }
+      // read the records of requested page
+      const page = args.page || 0;
+      if (page === 0) {
+        delete input.ExclusiveStartKey;
+        const command = new ScanCommand(input);
+        const output = await dynamo.send(command);
+        result.items = output.Items.map(item => unmarshall(item));
+      } else {
+        input.ExclusiveStartKey = marshall({
+          id: exclusiveStartKeys[page - 1]
+        });
+        const command = new ScanCommand(input);
+        const output = await dynamo.send(command);
+        result.items = output.Items.map(item => unmarshall(item));
+      }
+      return result;
     },
     showUser: async (parent, args, context, info) => {
       const { dynamo } = context.dataSources;
