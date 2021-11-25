@@ -1,25 +1,22 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { FunctionComponent } from 'react';
+import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
+
 import './App.css';
 
-function App() {
+import Home from './components/Home';
+
+const client = new ApolloClient({
+  uri: process.env.REACT_APP_API_ENDPOINT,
+  cache: new InMemoryCache()
+});
+
+const App: FunctionComponent = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <ApolloProvider client={client}>
+      <div className="App">
+        <Home />
+      </div>
+    </ApolloProvider>
   );
 }
 
