@@ -7,9 +7,10 @@ import { device } from '../device';
 
 interface CardProps {
   user: User;
+  onEdit: () => void;
 }
 
-const Card: FunctionComponent<CardProps> = ({ user }) => {
+const Card: FunctionComponent<CardProps> = ({ user, onEdit }) => {
   const [isHover, setIsHover] = useState(false);
 
   const handleMouseOver = (e: MouseEvent<HTMLDivElement>) => {
@@ -20,8 +21,6 @@ const Card: FunctionComponent<CardProps> = ({ user }) => {
     setIsHover(false);
   };
 
-  const handleEdit = () => {};
-
   return (
     <Container onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
       <div style={{ textAlign: 'center' }}>
@@ -30,7 +29,7 @@ const Card: FunctionComponent<CardProps> = ({ user }) => {
       <Header>{user.name}</Header>
       <Subheader>{user.description}</Subheader>
       {isHover && (
-        <EditIcon onClick={handleEdit}>
+        <EditIcon onClick={onEdit}>
           <MdOutlineEdit />
         </EditIcon>
       )}

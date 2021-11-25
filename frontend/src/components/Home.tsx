@@ -1,14 +1,46 @@
-import React, { FunctionComponent } from 'react';
+import React, { FunctionComponent, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useQuery } from '@apollo/client';
 
 import { device } from '../device';
-import { User, FIND_USERS } from '../helpers';
+import { User, FIND_USERS, FindUsersResult } from '../helpers';
 
 import Card from './Card';
+import Modal from './Modal';
 
 const Home: FunctionComponent = () => {
-  const { loading, error, data } = useQuery(FIND_USERS);
+  const { loading, error, data } = useQuery<FindUsersResult>(FIND_USERS);
+  const [users, setUsers] = useState<User[]>([]);
+  const [activeUser, setActiveUser] = useState(-1);
+
+  // avoid assigning null due to partial update
+  useEffect(() => {
+    const result = Array.from(users);
+    data?.findUsers.forEach(x => {
+      const index = result.findIndex(y => y.id === x.id);
+      if (index === -1) {
+        result.push(x);
+      } else {
+        const { name, dob, address, description, updatedAt } = x;
+        if (!!name) {
+          result[index] = { ...result[index], name };
+        }
+        if (!!dob) {
+          result[index] = { ...result[index], dob };
+        }
+        if (!!address) {
+          result[index] = { ...result[index], address };
+        }
+        if (!!description) {
+          result[index] = { ...result[index], description };
+        }
+        if (!!updatedAt) {
+          result[index] = { ...result[index], updatedAt };
+        }
+      }
+    });
+    setUsers(result);
+  }, [data?.findUsers]);
 
   if (loading) {
     return (
@@ -47,11 +79,20 @@ const Home: FunctionComponent = () => {
           />
         </Heading>
         <Grid>
-          {data.findUsers.map((user: User, index: number) => (
-            <Card key={index} user={user} />
+          {users.map((user: User, index: number) => (
+            <Card
+              key={index}
+              user={user}
+              onEdit={() => setActiveUser(index)}
+            />
           ))}
         </Grid>
       </Container>
+      <Modal
+        open={activeUser !== -1}
+        user={activeUser === -1 ? null : (users[activeUser] || null)}
+        onClose={() => setActiveUser(-1)}
+      />
     </div>
   );
 }
