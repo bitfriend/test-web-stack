@@ -89,16 +89,24 @@ const resolvers = {
         values[":name"] = { S: args.name };
       }
       if (args.dob !== undefined) {
-        terms.push("dob = :dob");
+        terms.push("#dob = :dob");
+        names["#dob"] = "dob"; // avoid this error "ExpressionAttributeNames must not be empty" from apollo client
         values[":dob"] = { S: moment.utc(args.dob).format() };
       }
       if (args.address !== undefined) {
-        terms.push("address = :address");
+        terms.push("#address = :address");
+        names["#address"] = "address"; // avoid this error "ExpressionAttributeNames must not be empty" from apollo client
         values[":address"] = { S: args.address };
       }
       if (args.description !== undefined) {
-        terms.push("description = :description");
+        terms.push("#description = :description");
+        names["#description"] = "description"; // avoid this error "ExpressionAttributeNames must not be empty" from apollo client
         values[":description"] = { S: args.description };
+      }
+      if (terms.length > 0) {
+        terms.push("#updatedAt = :updatedAt");
+        names["#updatedAt"] = "updatedAt"; // avoid this error "ExpressionAttributeNames must not be empty" from apollo client
+        values[":updatedAt"] = { S: moment.utc().format() };
       }
       const command = new UpdateItemCommand({
         TableName: "superformula_users",
@@ -111,7 +119,6 @@ const resolvers = {
         ReturnValues: "UPDATED_NEW"
       });
       const output = await dynamo.send(command);
-      console.log(output.Attributes);
       const res = {
         id: args.id // required when "id" field exists in query output part
       };
