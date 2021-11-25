@@ -12,6 +12,7 @@ const {
   ListTablesCommand,
   PutItemCommand
 } = require("@aws-sdk/client-dynamodb");
+const { marshall } = require("@aws-sdk/util-dynamodb");
 
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION,
@@ -62,7 +63,7 @@ async function createTable() {
 }
 
 async function writeRecords() {
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 40; i++) {
     const dob = faker.date.past(10, new Date(2001, 0, 1)); // 1991 ~ 2000
     const createdAt = faker.date.past(10, new Date(2001, 0, 1)); // 1991 ~ 2000
     const updatedAt = faker.date.past(10, new Date(2001, 0, 1)); // 1991 ~ 2000
@@ -70,15 +71,15 @@ async function writeRecords() {
     try {
       const command = new PutItemCommand({
         TableName: "superformula_users",
-        Item: {
-          id: { S: short.generate() },
-          name: { S: faker.name.findName() },
-          dob: { S: moment.utc(dob).format() },
-          address: { S: `${faker.address.city()} ${faker.address.state()} ${faker.address.zipCode()}` },
-          description: { S: faker.lorem.sentence(10) },
-          createdAt: { S: moment.utc(createdAt).format() },
-          updatedAt: { S: moment.utc(updatedAt).format() }
-        }
+        Item: marshall({
+          id: short.generate(),
+          name: faker.name.findName(),
+          dob: moment.utc(dob).format(),
+          address: `${faker.address.city()} ${faker.address.state()} ${faker.address.zipCode()}`,
+          description: faker.lorem.sentence(10),
+          createdAt: moment.utc(createdAt).format(),
+          updatedAt: moment.utc(updatedAt).format()
+        })
       });
       await client.send(command);
     } catch (e) {
