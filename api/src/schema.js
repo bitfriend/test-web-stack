@@ -11,8 +11,10 @@ const typeDefs = gql`
     updatedAt: String
   }
   type Query {
-    users: [User]
-    user(id: String!): User
+    findUsers: [User]
+    showUser(id: String!): User
+    createUser(name: String, dob: String, address: String, description: String, createdAt: String, updatedAt: String): User
+    updateUser(id: String!, name: String, dob: String, address: String, description: String, createdAt: String, updatedAt: String): User
   }
 `;
 

@@ -1,6 +1,12 @@
-const { GetItemCommand, ScanCommand } = require("@aws-sdk/client-dynamodb");
-
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBClient,
+  GetItemCommand,
+  PutItemCommand,
+  ScanCommand,
+  UpdateItemCommand
+} = require("@aws-sdk/client-dynamodb");
+const short = require("short-uuid");
+const moment = require("moment");
 
 const db = new DynamoDBClient({
   region: process.env.AWS_REGION,
@@ -12,49 +18,113 @@ const db = new DynamoDBClient({
 
 const resolvers = {
   Query: {
-    users: async (parent, args, context, info) => {
+    findUsers: async (parent, args, context, info) => {
       const command = new ScanCommand({
         TableName: "superformula_users",
         Limit: 10
       });
-      try {
-        const res = await db.send(command);
-        return res.Items.map(item => ({
-          id: item.id.S,
-          name: item.name.S,
-          dob: item.dob.S,
-          address: item.address.S,
-          description: item.description.S,
-          createdAt: item.createdAt.S,
-          updatedAt: item.updatedAt.S
-        }));
-      } catch (e) {
-        console.log(e);
-      }
+      const output = await db.send(command);
+      return output.Items.map(({ id, name, dob, address, description, createdAt, updatedAt }) => ({
+        id: id.S,
+        name: name.S,
+        dob: dob.S,
+        address: address.S,
+        description: description.S,
+        createdAt: createdAt.S,
+        updatedAt: updatedAt.S
+      }));
     },
-    user: async (parent, args, context, info) => {
+    showUser: async (parent, args, context, info) => {
       const command = new GetItemCommand({
         TableName: "superformula_users",
         Key: {
-          id: {
-            S: args.id
-          }
+          id: { S: args.id }
         }
       });
-      try {
-        const res = await db.send(command);
-        return {
-          id: res.Item.id.S,
-          name: res.Item.name.S,
-          dob: res.Item.dob.S,
-          address: res.Item.address.S,
-          description: res.Item.description.S,
-          createdAt: res.Item.createdAt.S,
-          updatedAt: res.Item.updatedAt.S
-        };
-      } catch (e) {
-        console.log(e);
+      const { Item: { id, name, dob, address, description, createdAt, updatedAt } } = await db.send(command);
+      return {
+        id: id.S,
+        name: name.S,
+        dob: dob.S,
+        address: address.S,
+        description: description.S,
+        createdAt: createdAt.S,
+        updatedAt: updatedAt.S
+      };
+    },
+    createUser: async (parent, args, context, info) => {
+      const res = {
+        id: short.generate(),
+        name: args.name,
+        dob: moment.utc(args.dob).format(),
+        address: args.address,
+        description: args.description,
+        createdAt: moment.utc(args.createdAt).format(),
+        updatedAt: moment.utc(args.updatedAt).format()
+      };
+      const command = new PutItemCommand({
+        TableName: "superformula_users",
+        Item: {
+          id: { S: res.id },
+          name: { S: res.name },
+          dob: { S: res.dob },
+          address: { S: res.address },
+          description: { S: res.description },
+          createdAt: { S: res.createdAt },
+          updatedAt: { S: res.updatedAt }
+        }
+      });
+      await db.send(command);
+      return res;
+    },
+    updateUser: async (parent, args, context, info) => {
+      const terms = [];
+      const names = {};
+      const values = {};
+      if (args.name !== undefined) {
+        terms.push("#name = :name");
+        names["#name"] = "name"; // name is reserved word in dynamodb, so use ExpressionAttributeNames
+        values[":name"] = { S: args.name };
       }
+      if (args.dob !== undefined) {
+        terms.push("dob = :dob");
+        values[":dob"] = { S: moment.utc(args.dob).format() };
+      }
+      if (args.address !== undefined) {
+        terms.push("address = :address");
+        values[":address"] = { S: args.address };
+      }
+      if (args.description !== undefined) {
+        terms.push("description = :description");
+        values[":description"] = { S: args.description };
+      }
+      if (args.createdAt !== undefined) {
+        terms.push("createdAt = :createdAt");
+        values[":createdAt"] = { S: moment.utc(args.createdAt).format() };
+      }
+      if (args.updatedAt !== undefined) {
+        terms.push("updatedAt = :updatedAt");
+        values[":updatedAt"] = { S: moment.utc(args.updatedAt).format() };
+      }
+      const command = new UpdateItemCommand({
+        TableName: "superformula_users",
+        Key: {
+          id: { S: args.id }
+        },
+        UpdateExpression: "set " + terms.join(", "),
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+        ReturnValues: "UPDATED_NEW"
+      });
+      const output = await db.send(command);
+      console.log(output.Attributes);
+      const res = {
+        id: args.id // required when "id" field exists in query output part
+      };
+      for (let key in output.Attributes) {
+        res[key] = output.Attributes[key].S;
+      }
+      return res;
     }
   }
 };
