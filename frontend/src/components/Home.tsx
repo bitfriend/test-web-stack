@@ -1,6 +1,6 @@
-import React, { FunctionComponent, useEffect, useState } from 'react';
+import React, { ChangeEvent, Fragment, FunctionComponent, useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { useQuery } from '@apollo/client';
+import { ApolloError, useQuery } from '@apollo/client';
 
 import { device } from '../helpers/device';
 import { useBreakpoint } from '../helpers/breakpoint';
@@ -8,26 +8,37 @@ import { User } from '../helpers/model';
 import { FIND_USERS, FindUsersResult } from '../helpers/graphql';
 
 import Card from './Card';
+import Pagination from './Pagination';
 import Modal from './Modal';
+
+const pageSize = 6;
 
 const Home: FunctionComponent = () => {
   const breakpoints = useBreakpoint();
   console.log('breakpoints', breakpoints);
 
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualError, setManualError] = useState<ApolloError>();
+  const [totalCount, setTotalCount] = useState(0);
+  const [activePage, setActivePage] = useState(0);
   const [users, setUsers] = useState<User[]>([]);
   const [activeUser, setActiveUser] = useState(-1);
   const [keyword, setKeyword] = useState('');
 
-  const { loading, error, data, refetch, fetchMore } = useQuery<FindUsersResult>(FIND_USERS, {
+  const { loading, error, data, refetch } = useQuery<FindUsersResult>(FIND_USERS, {
     variables: {
       search: keyword,
-      limit: 6
+      page: activePage,
+      limit: pageSize
     }
   });
 
-  function updateUsers(data: FindUsersResult | undefined) {
+  // avoid assigning null due to partial update
+  useEffect(() => {
+    console.log("partial update");
     const result = Array.from(users);
-    data?.findUsers.forEach(x => {
+    setTotalCount(data?.findUsers.totalItems || 0);
+    data?.findUsers.items.forEach(x => {
       const index = result.findIndex(y => y.id === x.id);
       if (index === -1) {
         result.push(x);
@@ -51,46 +62,64 @@ const Home: FunctionComponent = () => {
       }
     });
     setUsers(result);
-  }
-
-  // avoid assigning null due to partial update
-  useEffect(() => {
-    updateUsers(data);
   }, [data?.findUsers]);
 
-  useEffect(() => {
-    async function fetchUsers(search: string) {
-      const { loading, error, data } = await refetch({ search, limit: 6 });
-      setUsers(data.findUsers);
-    }
-    fetchUsers(keyword);
-  }, [keyword]);
-
-  if (loading) {
-    return (
-      <div style={{
-        height: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}>
-        <p>Loading...</p>
-      </div>
-    );
+  const onChangeKeyword = async (e: ChangeEvent<HTMLInputElement>) => {
+    console.log('onChangeKeyword');
+    setKeyword(e.target.value);
+    setManualLoading(true);
+    const { loading, error, data } = await refetch({
+      search: e.target.value,
+      page: 0,
+      limit: pageSize
+    });
+    setManualError(error);
+    setManualLoading(false);
+    setTotalCount(data.findUsers.totalItems);
+    setActivePage(0);
+    setUsers(data.findUsers.items);
   }
 
-  if (error) {
-    return (
-      <div style={{
-        height: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}>
-        <p>Error occurred</p>
-      </div>
-    );
+  const onChangePage = async (page: number) => {
+    console.log('onChangePage', page);
+    setManualLoading(true);
+    const { loading, error, data } = await refetch({
+      search: keyword,
+      page: page - 1,
+      limit: pageSize
+    });
+    setManualError(error);
+    setManualLoading(false);
+    setTotalCount(data.findUsers.totalItems);
+    setActivePage(page - 1);
+    setUsers(data.findUsers.items);
   }
+
+  // if (loading) {
+  //   return (
+  //     <div style={{
+  //       height: '100%',
+  //       display: 'flex',
+  //       justifyContent: 'center',
+  //       alignItems: 'center'
+  //     }}>
+  //       <p>Loading...</p>
+  //     </div>
+  //   );
+  // }
+
+  // if (error) {
+  //   return (
+  //     <div style={{
+  //       height: '100%',
+  //       display: 'flex',
+  //       justifyContent: 'center',
+  //       alignItems: 'center'
+  //     }}>
+  //       <p>Error occurred</p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div style={{ backgroundColor: '#f8f8f8' }}>
@@ -101,18 +130,39 @@ const Home: FunctionComponent = () => {
             type="text"
             placeholder="Search..."
             value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            onChange={onChangeKeyword}
           />
         </Heading>
-        <Grid>
-          {users.map((user: User, index: number) => (
-            <Card
-              key={index}
-              user={user}
-              onEdit={() => setActiveUser(index)}
-            />
-          ))}
-        </Grid>
+        {(loading || manualLoading) ? (
+          <MsgBox>
+            <p>Loading...</p>
+          </MsgBox>
+        ) : (error || manualError) ? (
+          <MsgBox>
+            <p>Error occurred</p>
+          </MsgBox>
+        ) : (
+          <Fragment>
+            <Grid>
+              {users.map((user: User, index: number) => (
+                <Card
+                  key={index}
+                  user={user}
+                  onEdit={() => setActiveUser(index)}
+                />
+              ))}
+            </Grid>
+            {totalCount > pageSize && (
+              <Pagination
+                page={activePage + 1}
+                totalPages={Math.floor((totalCount + pageSize - 1) / pageSize)}
+                onPageClick={onChangePage}
+                foreColor="black"
+                backColor="white"
+              />
+            )}
+          </Fragment>
+        )}
       </Container>
       <Modal
         open={activeUser !== -1}
@@ -202,6 +252,13 @@ const Grid = styled.div`
     grid-template-columns: 1fr 1fr 1fr;
     gap: 64px;
   }
+`;
+
+const MsgBox = styled.div`
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
 export default Home;

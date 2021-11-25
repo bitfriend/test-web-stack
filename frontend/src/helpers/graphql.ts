@@ -5,19 +5,25 @@ import { User } from './model';
 export const FIND_USERS = gql`
   query ($search: String, $page: Int, $limit: Int) {
     findUsers(search: $search, page: $page, limit: $limit) {
-      id
-      name
-      dob
-      address
-      description
-      createdAt
-      updatedAt
+      items {
+        id
+        name
+        dob
+        address
+        description
+        createdAt
+        updatedAt
+      }
+      totalItems
     }
   }
 `;
 
 export interface FindUsersResult {
-  findUsers: User[];
+  findUsers: {
+    items: User[];
+    totalItems: number;
+  }
 }
 
 export const UPDATE_USER = gql`
