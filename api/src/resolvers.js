@@ -1,5 +1,5 @@
 const {
-  DynamoDBClient,
+  DeleteItemCommand,
   GetItemCommand,
   PutItemCommand,
   ScanCommand,
@@ -8,22 +8,15 @@ const {
 const short = require("short-uuid");
 const moment = require("moment");
 
-const db = new DynamoDBClient({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-  }
-});
-
 const resolvers = {
   Query: {
     findUsers: async (parent, args, context, info) => {
+      const { dynamo } = context.dataSources;
       const command = new ScanCommand({
         TableName: "superformula_users",
         Limit: 10
       });
-      const output = await db.send(command);
+      const output = await dynamo.send(command);
       return output.Items.map(({ id, name, dob, address, description, createdAt, updatedAt }) => ({
         id: id.S,
         name: name.S,
@@ -35,13 +28,18 @@ const resolvers = {
       }));
     },
     showUser: async (parent, args, context, info) => {
+      const { dynamo } = context.dataSources;
       const command = new GetItemCommand({
         TableName: "superformula_users",
         Key: {
           id: { S: args.id }
         }
       });
-      const { Item: { id, name, dob, address, description, createdAt, updatedAt } } = await db.send(command);
+      const res = await dynamo.send(command);
+      if (!res.Item) {
+        return null;
+      }
+      const { id, name, dob, address, description, createdAt, updatedAt } = res.Item;
       return {
         id: id.S,
         name: name.S,
@@ -51,8 +49,11 @@ const resolvers = {
         createdAt: createdAt.S,
         updatedAt: updatedAt.S
       };
-    },
+    }
+  },
+  Mutation: {
     createUser: async (parent, args, context, info) => {
+      const { dynamo } = context.dataSources;
       const res = {
         id: short.generate(),
         name: args.name,
@@ -74,10 +75,11 @@ const resolvers = {
           updatedAt: { S: res.updatedAt }
         }
       });
-      await db.send(command);
+      await dynamo.send(command);
       return res;
     },
     updateUser: async (parent, args, context, info) => {
+      const { dynamo } = context.dataSources;
       const terms = [];
       const names = {};
       const values = {};
@@ -108,7 +110,7 @@ const resolvers = {
         ExpressionAttributeValues: values,
         ReturnValues: "UPDATED_NEW"
       });
-      const output = await db.send(command);
+      const output = await dynamo.send(command);
       console.log(output.Attributes);
       const res = {
         id: args.id // required when "id" field exists in query output part
@@ -117,6 +119,19 @@ const resolvers = {
         res[key] = output.Attributes[key].S;
       }
       return res;
+    },
+    deleteUser: async (parent, args, context, info) => {
+      const { dataSources, request, h } = context;
+      const command = new DeleteItemCommand({
+        TableName: "superformula_users",
+        Key: {
+          id: { S: args.id }
+        }
+      });
+      await dataSources.dynamo.send(command);
+      return {
+        id: args.id
+      };
     }
   }
 };
