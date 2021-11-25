@@ -122,26 +122,21 @@ const Map: FunctionComponent<MapProps> = ({
 }
 
 const Canvas = styled.div`
-  width: 90vw;
+  width: 100%;
   height: 120px;
   @media ${device.mobileM} {
-    width: 90vw;
     height: 160px;
   }
   @media ${device.mobileL} {
-    width: 90vw;
     height: 200px;
   }
   @media ${device.tablet} {
-    width: 360px;
     height: 240px;
   }
   @media ${device.laptop} {
-    width: 420px;
     height: 280px;
   }
   @media ${device.desktop} {
-    width: 480px;
     height: 320px;
   }
 `;

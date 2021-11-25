@@ -1,5 +1,6 @@
-import React, { Fragment, FunctionComponent, useEffect, useState } from 'react';
+import React, { FunctionComponent, MouseEvent, useEffect, useState } from 'react';
 import styled from 'styled-components';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation } from '@apollo/client';
 import { isEmpty } from 'lodash';
 
@@ -46,94 +47,116 @@ const Modal: FunctionComponent<ModalProps> = ({ open, user, onClose }) => {
   }
 
   return (
-    <Fragment>
-      <Container open={open} className={open ? 'modal visible' : 'modal'}>
-        <Caption>Edit user</Caption>
-        <Grid>
-          <GMap />
-          <div style={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <FormControl>
-              <Label>Name</Label>
-              <Input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </FormControl>
-            <FormControl>
-              <Label>Address</Label>
-              <Input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-            </FormControl>
-            <FormControl>
-              <Label>Description</Label>
-              <Input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </FormControl>
-          </div>
-        </Grid>
-        <ActionBar>
-          <Button onClick={handleSave}>SAVE</Button>
-          <Button onClick={onClose}>CANCEL</Button>
-        </ActionBar>
-      </Container>
-      <Overlay open={open} onClick={onClose} />
-    </Fragment>
+    <AnimatePresence>
+      {open && (
+        <Overlay
+          initial="initial"
+          animate="isOpen"
+          exit="exit"
+          variants={{
+            initial: { opacity: 0 },
+            isOpen: { opacity: 1 },
+            exit: { opacity: 0 }
+          }}
+          onClick={onClose}
+        >
+          <Container
+            variants={{
+              initial: { top: '-50%', transition: { type: 'spring' } },
+              isOpen: { top: '50%' },
+              exit: { top: '-50%' }
+            }}
+            onClick={(e: MouseEvent<HTMLDivElement>) => {
+              // prevent overlay's onClick event from firing
+              e.stopPropagation();
+            }}
+          >
+            <Caption>Edit user</Caption>
+            <GridContainer>
+              <GridItem>
+                <GMap />
+              </GridItem>
+              <GridItem>
+                <div style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <FormControl>
+                    <Label>Name</Label>
+                    <Input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <Label>Address</Label>
+                    <Input
+                      type="text"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <Label>Description</Label>
+                    <Input
+                      type="text"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
+                  </FormControl>
+                </div>
+              </GridItem>
+            </GridContainer>
+            <ActionBar>
+              <Button onClick={handleSave}>SAVE</Button>
+              <Button onClick={onClose}>CANCEL</Button>
+            </ActionBar>
+          </Container>
+        </Overlay>
+      )}
+    </AnimatePresence>
   );
 }
 
-interface OverlayProps {
-  open: boolean;
-};
-
-const Overlay = styled.div<OverlayProps>`
+const Overlay = styled(motion.div)`
   position: fixed;
   top: 0;
   right: 0;
-  bottom: 0;
-  left: 0;
+  width: 100%;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  display: ${props => props.open ? 'block' : 'none'};
-  z-index: 5;
 `;
 
-interface ContainerProps {
-  open: boolean;
-};
-
-const Container = styled.div<ContainerProps>`
-  position: fixed;
-  top: -50%;
-  left: 50%;
+const Container = styled(motion.div)`
+  width: 90%;
   background-color: #f8f8f8;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   border-radius: 8px;
   padding: 8px;
-  z-index: 10;
-  transition: all 0.3s ease-out;
   @media ${device.mobileM} {
+    width: 85%;
     padding: 12px;
   }
   @media ${device.mobileL} {
+    width: 80%;
     padding: 16px;
   }
   @media ${device.tablet} {
+    width: 75%;
     padding: 24px;
   }
   @media ${device.laptop} {
+    width: 70%;
     padding: 48px;
   }
   @media ${device.desktop} {
+    width: 65%;
     padding: 64px;
   }
 `;
@@ -164,29 +187,43 @@ const Caption = styled.div`
   }
 `;
 
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: auto;
-  gap: 8px;
+const GridContainer = styled.div`
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  flex-direction: row;
+`;
+
+const GridItem = styled.div`
+  box-sizing: border-box;
+  flex-basis: 100%;
+  max-width: 100%;
+  padding: 4px;
   @media ${device.mobileM} {
-    grid-template-columns: auto;
-    gap: 12px;
+    flex-basis: 100%;
+    max-width: 100%;
+    padding: 4px;
   }
   @media ${device.mobileL} {
-    grid-template-columns: auto auto;
-    gap: 16px;
+    flex-basis: 100%;
+    max-width: 100%;
+    padding: 4px;
   }
   @media ${device.tablet} {
-    grid-template-columns: auto auto;
-    gap: 24px;
+    flex-basis: 50%;
+    max-width: 50%;
+    padding: 6px;
   }
   @media ${device.laptop} {
-    grid-template-columns: auto auto;
-    gap: 48px;
+    flex-basis: 50%;
+    max-width: 50%;
+    padding: 8px;
   }
   @media ${device.desktop} {
-    grid-template-columns: auto auto;
-    gap: 64px;
+    flex-basis: 50%;
+    max-width: 50%;
+    padding: 12px;
   }
 `;
 
