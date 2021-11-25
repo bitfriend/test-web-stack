@@ -4,52 +4,99 @@ require('dotenv').config();
 const short = require('short-uuid');
 const faker = require('faker');
 const moment = require('moment');
-const { escapeSql } = require('../src/helpers');
 
-const mysql = require('mysql');
-const conn = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE
+const {
+  CreateTableCommand,
+  DeleteTableCommand,
+  DynamoDBClient,
+  ListTablesCommand,
+  PutItemCommand
+} = require('@aws-sdk/client-dynamodb');
+
+const client = new DynamoDBClient({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  }
 });
 
-conn.connect();
-
-conn.query('CREATE TABLE IF NOT EXISTS users (\
-  id varchar(255) NOT NULL,\
-  name varchar(255) NOT NULL,\
-  dob varchar(255),\
-  address varchar(255),\
-  description varchar(255) NOT NULL,\
-  created_at varchar(255),\
-  updated_at varchar(255),\
-  PRIMARY KEY (id)\
-); ');
-
-for (let i = 0; i < 100; i++) {
-  const id = short.generate();
-  const name = faker.name.findName();
-  const dob = faker.date.past(10, new Date(2001, 0, 1)); // 1991 ~ 2000
-  const city = faker.address.city();
-  const state = faker.address.state();
-  const zipCode = faker.address.zipCode();
-  const address = escapeSql(`${city} ${state} ${zipCode}`);
-  const description = faker.lorem.sentence(10);
-  const createdAt = faker.date.past(10, new Date(2001, 0, 1));
-  const updatedAt = faker.date.past(10, new Date(2001, 0, 1));
-  const text = `INSERT INTO users (\
-    id, name, dob, address, description, created_at, updated_at\
-  ) VALUES (\
-    '${id}',\
-    '${escapeSql(name)}',\
-    '${moment.utc(dob).format()}',\
-    '${address}',\
-    '${escapeSql(description)}',\
-    '${moment.utc(createdAt).format()}',\
-    '${moment.utc(updatedAt).format()}'\
-  )`;
-  conn.query(text);
+async function deleteTable() {
+  try {
+    const data = await client.send(new ListTablesCommand({}));
+    if (data.TableNames.includes('superformula_users')) {
+      const command = new DeleteTableCommand({
+        TableName: 'superformula_users'
+      });
+      await client.send(command);
+    }
+  } catch (e) {
+    console.log(e);
+  }
 }
 
-conn.end();
+async function createTable() {
+  try {
+    const command = new CreateTableCommand({
+      TableName: 'superformula_users',
+      AttributeDefinitions: [{
+        AttributeName: 'id',
+        AttributeType: 'S'
+      }],
+      KeySchema: [{
+        AttributeName: 'id',
+        KeyType: 'HASH'
+      }],
+      ProvisionedThroughput: {
+        ReadCapacityUnits: 1,
+        WriteCapacityUnits: 1
+      },
+      StreamSpecification: {
+        StreamEnabled: false
+      }
+    });
+    await client.send(command);
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+async function writeRecords() {
+  for (let i = 0; i < 100; i++) {
+    const dob = faker.date.past(10, new Date(2001, 0, 1)); // 1991 ~ 2000
+    const createdAt = faker.date.past(10, new Date(2001, 0, 1)); // 1991 ~ 2000
+    const updatedAt = faker.date.past(10, new Date(2001, 0, 1)); // 1991 ~ 2000
+
+    try {
+      const command = new PutItemCommand({
+        TableName: 'superformula_users',
+        Item: {
+          id: { S: short.generate() },
+          name: { S: faker.name.findName() },
+          dob: { S: moment.utc(dob).format() },
+          address: { S: `${faker.address.city()} ${faker.address.state()} ${faker.address.zipCode()}` },
+          description: { S: faker.lorem.sentence(10) },
+          createdAt: { S: moment.utc(createdAt).format() },
+          updatedAt: { S: moment.utc(updatedAt).format() }
+        }
+      });
+      await client.send(command);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+}
+
+const delay = (miliseconds) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, miliseconds);
+  });
+}
+
+(async () => {
+  await deleteTable();
+  await delay(2000); // avoid failure in creating
+  await createTable();
+  await delay(6000); // avoid failure in writing
+  await writeRecords();
+})();

@@ -25,9 +25,9 @@
   },
   "homepage": "https://github.com/bitfriend/superformula-challenge-api#readme",
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.42.0",
     "@hapi/hapi": "^20.2.1",
     "dotenv": "^10.0.0",
-    "hapi-plugin-mysql": "^7.2.4",
     "moment": "^2.29.1",
     "short-uuid": "^4.2.0"
   },
