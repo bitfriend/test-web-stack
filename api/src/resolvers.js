@@ -17,15 +17,6 @@ const resolvers = {
         TableName: "superformula_users",
         Limit: args.limit || 10
       };
-      if (!!args.search) {
-        input.FilterExpression = "contains(#name, :name)";
-        input.ExpressionAttributeNames = {
-          "#name": "name"
-        };
-        input.ExpressionAttributeValues = marshall({
-          ":name": args.search
-        });
-      }
       const result = {
         totalItems: 0
       };
@@ -42,6 +33,15 @@ const resolvers = {
         exclusiveStartKeys.push(unmarshall(input.ExclusiveStartKey).id);
       }
       // read the records of requested page
+      if (!!args.search) {
+        input.FilterExpression = "contains(#name, :name)";
+        input.ExpressionAttributeNames = {
+          "#name": "name"
+        };
+        input.ExpressionAttributeValues = marshall({
+          ":name": args.search
+        });
+      }
       const page = args.page || 0;
       if (page === 0) {
         delete input.ExclusiveStartKey;
