@@ -1,4 +1,4 @@
-import React, { FunctionComponent, MouseEvent, useState } from 'react';
+import React, { FunctionComponent } from 'react';
 import styled from 'styled-components';
 import { MdOutlineEdit } from 'react-icons/md';
 
@@ -11,28 +11,16 @@ interface CardProps {
 }
 
 const Card: FunctionComponent<CardProps> = ({ user, onEdit }) => {
-  const [isHover, setIsHover] = useState(false);
-
-  const handleMouseOver = (e: MouseEvent<HTMLDivElement>) => {
-    setIsHover(true);
-  };
-
-  const handleMouseLeave = (e: MouseEvent<HTMLDivElement>) => {
-    setIsHover(false);
-  };
-
   return (
-    <Container onMouseOver={handleMouseOver} onMouseLeave={handleMouseLeave}>
+    <Container className="box">
       <div style={{ textAlign: 'center' }}>
         <Avatar src={`https://thispersondoesnotexist.com/image?random=${user.id}`} />
       </div>
       <Header>{user.name}</Header>
       <Subheader>{user.description}</Subheader>
-      {isHover && (
-        <EditIcon onClick={onEdit}>
-          <MdOutlineEdit />
-        </EditIcon>
-      )}
+      <EditIcon className="edit" onClick={onEdit}>
+        <MdOutlineEdit />
+      </EditIcon>
     </Container>
   );
 }

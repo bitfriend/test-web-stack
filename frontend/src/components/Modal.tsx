@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useEffect, useState } from 'react';
+import React, { Fragment, FunctionComponent, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useMutation } from '@apollo/client';
 import { isEmpty } from 'lodash';
@@ -46,18 +46,8 @@ const Modal: FunctionComponent<ModalProps> = ({ open, user, onClose }) => {
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: open ? 'flex' : 'none',
-      justifyContent: 'center',
-      alignItems: 'center'
-    }}>
-      <Container>
+    <Fragment>
+      <Container open={open} className={open ? 'modal visible' : 'modal'}>
         <Caption>Edit user</Caption>
         <Grid>
           <GMap />
@@ -98,14 +88,39 @@ const Modal: FunctionComponent<ModalProps> = ({ open, user, onClose }) => {
           <Button onClick={onClose}>CANCEL</Button>
         </ActionBar>
       </Container>
-    </div>
+      <Overlay open={open} onClick={onClose} />
+    </Fragment>
   );
 }
 
-const Container = styled.div`
+interface OverlayProps {
+  open: boolean;
+};
+
+const Overlay = styled.div<OverlayProps>`
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: ${props => props.open ? 'block' : 'none'};
+  z-index: 5;
+`;
+
+interface ContainerProps {
+  open: boolean;
+};
+
+const Container = styled.div<ContainerProps>`
+  position: fixed;
+  top: -50%;
+  left: 50%;
   background-color: #f8f8f8;
   border-radius: 8px;
   padding: 8px;
+  z-index: 10;
+  transition: all 0.3s ease-out;
   @media ${device.mobileM} {
     padding: 12px;
   }

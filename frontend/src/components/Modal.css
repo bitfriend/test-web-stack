@@ -1,0 +1,8 @@
+.modal {
+  transform: translate(-50%, -50%);
+  transition: all linear 0.3s;
+}
+
+.modal.visible {
+  transform: translate(-50%, 50%);
+}
