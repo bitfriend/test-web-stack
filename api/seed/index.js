@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-require('dotenv').config();
-const short = require('short-uuid');
-const faker = require('faker');
-const moment = require('moment');
+require("dotenv").config();
+const short = require("short-uuid");
+const faker = require("faker");
+const moment = require("moment");
 
 const {
   CreateTableCommand,
@@ -11,7 +11,7 @@ const {
   DynamoDBClient,
   ListTablesCommand,
   PutItemCommand
-} = require('@aws-sdk/client-dynamodb');
+} = require("@aws-sdk/client-dynamodb");
 
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION,
@@ -24,9 +24,9 @@ const client = new DynamoDBClient({
 async function deleteTable() {
   try {
     const data = await client.send(new ListTablesCommand({}));
-    if (data.TableNames.includes('superformula_users')) {
+    if (data.TableNames.includes("superformula_users")) {
       const command = new DeleteTableCommand({
-        TableName: 'superformula_users'
+        TableName: "superformula_users"
       });
       await client.send(command);
     }
@@ -38,14 +38,14 @@ async function deleteTable() {
 async function createTable() {
   try {
     const command = new CreateTableCommand({
-      TableName: 'superformula_users',
+      TableName: "superformula_users",
       AttributeDefinitions: [{
-        AttributeName: 'id',
-        AttributeType: 'S'
+        AttributeName: "id",
+        AttributeType: "S"
       }],
       KeySchema: [{
-        AttributeName: 'id',
-        KeyType: 'HASH'
+        AttributeName: "id",
+        KeyType: "HASH"
       }],
       ProvisionedThroughput: {
         ReadCapacityUnits: 1,
@@ -69,7 +69,7 @@ async function writeRecords() {
 
     try {
       const command = new PutItemCommand({
-        TableName: 'superformula_users',
+        TableName: "superformula_users",
         Item: {
           id: { S: short.generate() },
           name: { S: faker.name.findName() },
