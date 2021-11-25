@@ -3,7 +3,6 @@ import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
 
 import './App.css';
 import './components/Card.css';
-import './components/Modal.css';
 
 import Home from './components/Home';
 

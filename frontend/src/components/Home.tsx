@@ -9,12 +9,17 @@ import Card from './Card';
 import Modal from './Modal';
 
 const Home: FunctionComponent = () => {
-  const { loading, error, data } = useQuery<FindUsersResult>(FIND_USERS);
   const [users, setUsers] = useState<User[]>([]);
   const [activeUser, setActiveUser] = useState(-1);
+  const [keyword, setKeyword] = useState('');
 
-  // avoid assigning null due to partial update
-  useEffect(() => {
+  const { loading, error, data, refetch, fetchMore } = useQuery<FindUsersResult>(FIND_USERS, {
+    variables: {
+      search: keyword
+    }
+  });
+
+  function updateUsers(data: FindUsersResult | undefined) {
     const result = Array.from(users);
     data?.findUsers.forEach(x => {
       const index = result.findIndex(y => y.id === x.id);
@@ -40,7 +45,22 @@ const Home: FunctionComponent = () => {
       }
     });
     setUsers(result);
+  }
+
+  // avoid assigning null due to partial update
+  useEffect(() => {
+    updateUsers(data);
   }, [data?.findUsers]);
+
+  useEffect(() => {
+    async function fetchUsers(search: string) {
+      console.log('fetchUsers');
+      const { loading, error, data } = await refetch({ search });
+      console.log('updateUsers', data);
+      setUsers(data.findUsers);
+    }
+    fetchUsers(keyword);
+  }, [keyword]);
 
   if (loading) {
     return (
@@ -76,6 +96,8 @@ const Home: FunctionComponent = () => {
           <SearchBox
             type="text"
             placeholder="Search..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
           />
         </Heading>
         <Grid>
@@ -154,26 +176,26 @@ const SearchBox = styled.input`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: auto;
+  grid-template-columns: 1fr;
   gap: 8px;
   @media ${device.mobileM} {
-    grid-template-columns: auto auto;
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
   @media ${device.mobileL} {
-    grid-template-columns: auto auto;
+    grid-template-columns: 1fr 1fr;
     gap: 16px;
   }
   @media ${device.tablet} {
-    grid-template-columns: auto auto auto;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 24px;
   }
   @media ${device.laptop} {
-    grid-template-columns: auto auto auto;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 48px;
   }
   @media ${device.desktop} {
-    grid-template-columns: auto auto auto;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 64px;
   }
 `;
