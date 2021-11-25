@@ -14,7 +14,7 @@ import { createCustomEqual } from 'fast-equals';
 import { isLatLngLiteral } from '@googlemaps/typescript-guards';
 import styled from 'styled-components';
 
-import { device } from '../device';
+import { device } from '../helpers/device';
 
 const onRenderWrapper = (status: Status) => {
   return (

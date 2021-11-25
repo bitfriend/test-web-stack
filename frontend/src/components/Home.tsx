@@ -2,20 +2,26 @@ import React, { FunctionComponent, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useQuery } from '@apollo/client';
 
-import { device } from '../device';
-import { User, FIND_USERS, FindUsersResult } from '../helpers';
+import { device } from '../helpers/device';
+import { useBreakpoint } from '../helpers/breakpoint';
+import { User } from '../helpers/model';
+import { FIND_USERS, FindUsersResult } from '../helpers/graphql';
 
 import Card from './Card';
 import Modal from './Modal';
 
 const Home: FunctionComponent = () => {
+  const breakpoints = useBreakpoint();
+  console.log('breakpoints', breakpoints);
+
   const [users, setUsers] = useState<User[]>([]);
   const [activeUser, setActiveUser] = useState(-1);
   const [keyword, setKeyword] = useState('');
 
   const { loading, error, data, refetch, fetchMore } = useQuery<FindUsersResult>(FIND_USERS, {
     variables: {
-      search: keyword
+      search: keyword,
+      limit: 6
     }
   });
 
@@ -54,9 +60,7 @@ const Home: FunctionComponent = () => {
 
   useEffect(() => {
     async function fetchUsers(search: string) {
-      console.log('fetchUsers');
-      const { loading, error, data } = await refetch({ search });
-      console.log('updateUsers', data);
+      const { loading, error, data } = await refetch({ search, limit: 6 });
       setUsers(data.findUsers);
     }
     fetchUsers(keyword);

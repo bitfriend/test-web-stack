@@ -2,8 +2,8 @@ import React, { FunctionComponent } from 'react';
 import styled from 'styled-components';
 import { MdOutlineEdit } from 'react-icons/md';
 
-import { User } from '../helpers';
-import { device } from '../device';
+import { User } from '../helpers/model';
+import { device } from '../helpers/device';
 
 interface CardProps {
   user: User;

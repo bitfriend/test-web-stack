@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation } from '@apollo/client';
 import { isEmpty } from 'lodash';
 
-import { device } from '../device';
-import { User, UPDATE_USER, UpdateUserResult } from '../helpers';
+import { device } from '../helpers/device';
+import { User } from '../helpers/model';
+import { UPDATE_USER, UpdateUserResult } from '../helpers/graphql';
 
 import GMap from './GMap';
 

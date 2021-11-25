@@ -1,14 +1,6 @@
 import { gql } from '@apollo/client';
 
-export interface User {
-  id: string;
-  name?: string;
-  dob?: string;
-  address?: string;
-  description?: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
+import { User } from './model';
 
 export const FIND_USERS = gql`
   query ($search: String, $page: Int, $limit: Int) {
