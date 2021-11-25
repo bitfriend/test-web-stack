@@ -5,6 +5,7 @@ const {
   ScanCommand,
   UpdateItemCommand
 } = require("@aws-sdk/client-dynamodb");
+const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 const short = require("short-uuid");
 const moment = require("moment");
 
@@ -14,41 +15,24 @@ const resolvers = {
       const { dynamo } = context.dataSources;
       const command = new ScanCommand({
         TableName: "superformula_users",
-        Limit: 10
+        Limit: args.limit || 10
       });
       const output = await dynamo.send(command);
-      return output.Items.map(({ id, name, dob, address, description, createdAt, updatedAt }) => ({
-        id: id.S,
-        name: name.S,
-        dob: dob.S,
-        address: address.S,
-        description: description.S,
-        createdAt: createdAt.S,
-        updatedAt: updatedAt.S
-      }));
+      return output.Items.map(item => unmarshall(item));
     },
     showUser: async (parent, args, context, info) => {
       const { dynamo } = context.dataSources;
       const command = new GetItemCommand({
         TableName: "superformula_users",
-        Key: {
-          id: { S: args.id }
-        }
+        Key: marshall({
+          id: args.id
+        })
       });
       const res = await dynamo.send(command);
       if (!res.Item) {
         return null;
       }
-      const { id, name, dob, address, description, createdAt, updatedAt } = res.Item;
-      return {
-        id: id.S,
-        name: name.S,
-        dob: dob.S,
-        address: address.S,
-        description: description.S,
-        createdAt: createdAt.S,
-        updatedAt: updatedAt.S
-      };
+      return unmarshall(res.Item);
     }
   },
   Mutation: {
@@ -65,15 +49,7 @@ const resolvers = {
       };
       const command = new PutItemCommand({
         TableName: "superformula_users",
-        Item: {
-          id: { S: res.id },
-          name: { S: res.name },
-          dob: { S: res.dob },
-          address: { S: res.address },
-          description: { S: res.description },
-          createdAt: { S: res.createdAt },
-          updatedAt: { S: res.updatedAt }
-        }
+        Item: marshall(res)
       });
       await dynamo.send(command);
       return res;
@@ -86,54 +62,50 @@ const resolvers = {
       if (args.name !== undefined) {
         terms.push("#name = :name");
         names["#name"] = "name"; // name is reserved word in dynamodb, so use ExpressionAttributeNames
-        values[":name"] = { S: args.name };
+        values[":name"] = args.name;
       }
       if (args.dob !== undefined) {
         terms.push("#dob = :dob");
         names["#dob"] = "dob"; // avoid this error "ExpressionAttributeNames must not be empty" from apollo client
-        values[":dob"] = { S: moment.utc(args.dob).format() };
+        values[":dob"] = moment.utc(args.dob).format();
       }
       if (args.address !== undefined) {
         terms.push("#address = :address");
         names["#address"] = "address"; // avoid this error "ExpressionAttributeNames must not be empty" from apollo client
-        values[":address"] = { S: args.address };
+        values[":address"] = args.address;
       }
       if (args.description !== undefined) {
         terms.push("#description = :description");
         names["#description"] = "description"; // avoid this error "ExpressionAttributeNames must not be empty" from apollo client
-        values[":description"] = { S: args.description };
+        values[":description"] = args.description;
       }
       if (terms.length > 0) {
         terms.push("#updatedAt = :updatedAt");
         names["#updatedAt"] = "updatedAt"; // avoid this error "ExpressionAttributeNames must not be empty" from apollo client
-        values[":updatedAt"] = { S: moment.utc().format() };
+        values[":updatedAt"] = moment.utc().format();
       }
       const command = new UpdateItemCommand({
         TableName: "superformula_users",
-        Key: {
-          id: { S: args.id }
-        },
+        Key: marshall({
+          id: args.id
+        }),
         UpdateExpression: "set " + terms.join(", "),
         ExpressionAttributeNames: names,
-        ExpressionAttributeValues: values,
+        ExpressionAttributeValues: marshall(values),
         ReturnValues: "UPDATED_NEW"
       });
       const output = await dynamo.send(command);
-      const res = {
-        id: args.id // required when "id" field exists in query output part
-      };
-      for (let key in output.Attributes) {
-        res[key] = output.Attributes[key].S;
-      }
+      const res = unmarshall(output.Attributes);
+      res.id = args.id; // required when "id" field exists in query output part
       return res;
     },
     deleteUser: async (parent, args, context, info) => {
       const { dataSources, request, h } = context;
       const command = new DeleteItemCommand({
         TableName: "superformula_users",
-        Key: {
-          id: { S: args.id }
-        }
+        Key: marshall({
+          id: args.id
+        })
       });
       await dataSources.dynamo.send(command);
       return {
