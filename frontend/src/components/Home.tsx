@@ -95,32 +95,6 @@ const Home: FunctionComponent = () => {
     setUsers(data.findUsers.items);
   }
 
-  // if (loading) {
-  //   return (
-  //     <div style={{
-  //       height: '100%',
-  //       display: 'flex',
-  //       justifyContent: 'center',
-  //       alignItems: 'center'
-  //     }}>
-  //       <p>Loading...</p>
-  //     </div>
-  //   );
-  // }
-
-  // if (error) {
-  //   return (
-  //     <div style={{
-  //       height: '100%',
-  //       display: 'flex',
-  //       justifyContent: 'center',
-  //       alignItems: 'center'
-  //     }}>
-  //       <p>Error occurred</p>
-  //     </div>
-  //   );
-  // }
-
   return (
     <div style={{ backgroundColor: '#f8f8f8' }}>
       <Container>

@@ -38,8 +38,6 @@ const GMap: FunctionComponent = () => {
 
   const onIdle = (m: google.maps.Map) => {
     console.log('onIdle', m);
-    // setZoom(m.getZoom());
-    // setCenter(m.getCenter().toJSON());
   }
 
   return (
