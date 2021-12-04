@@ -2,7 +2,7 @@ import React, { FunctionComponent, MouseEvent, useEffect, useState } from 'react
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation } from '@apollo/client';
-import { isEmpty } from 'lodash';
+import isEmpty from 'lodash/isEmpty';
 
 import { device } from '../helpers/device';
 import { User } from '../helpers/model';
